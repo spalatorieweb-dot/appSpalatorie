@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-VOxJmwu8nZRRi5PJcmjEZ7xgZTNk3DiCNA+MntkFqTI=' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self' https://bmksljcfsfnxtmgghcmz.supabase.co wss://bmksljcfsfnxtmgghcmz.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233E625C' stroke-width='1.7'%3E%3Crect x='4' y='2.5' width='16' height='19' rx='2.5'/%3E%3Cpath d='M4 7h16'/%3E%3Ccircle cx='12' cy='14' r='4.5'/%3E%3C/svg%3E">
+    <meta name="theme-color" content="#F7F4EF">
+    <title>Rezervări Spălătorie</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha384-t1nt8BQoYMLFN5p42tRAtuAAFQaCQODekUVeKKZrEnEyp4H2R0RHFz0KWpmj7i8g" crossorigin="anonymous" referrerpolicy="no-referrer">
+
+</head>
+<body>
+    <script>(function () { var t = localStorage.getItem('theme'); if (t === 'dark' || (!t && matchMedia('(prefers-color-scheme: dark)').matches)) document.body.classList.add('dark-mode'); })();</script>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+        <symbol id="icon-washer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="2.5" width="16" height="19" rx="2.5"/><path d="M4 7h16"/><circle cx="12" cy="14" r="4.5"/><path d="M10 12.6c1 .9 3 .9 4 0"/><path d="M7.2 4.8h.01M9.7 4.8h.01"/>
+        </symbol>
+    </svg>
+    <div id="appLoader" class="app-loader">
+        <div class="spinner"></div>
+        <p id="loaderText" data-i18n="connecting">Se conectează...</p>
+        <button id="reloadBtn" class="btn-ghost" style="display:none;" data-i18n="retry">Reîncearcă</button>
+    </div>
+
+    <div id="maintenanceOverlay" class="maintenance-screen" style="display:none;">
+        <div class="maintenance-content">
+            <i class="fa-solid fa-screwdriver-wrench fa-3x"></i>
+            <h1 data-i18n="maintenance_title">Mentenanță în Curs</h1>
+            <p data-i18n="maintenance_desc1">Revenim imediat! Facem curățenie în sistem.</p>
+            <p class="maintenance-sub" data-i18n="maintenance_desc2">Ne vedem în câteva minute.</p>
+            <button id="maintenanceAdminBtn" class="btn-ghost" style="margin-top:24px;"><i class="fa-solid fa-lock"></i> <span data-i18n="im_admin">Sunt Administrator</span></button>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <header class="main-header">
+            <div class="header-content">
+                <div class="logo-area">
+                    <i class="fa-solid fa-soap fa-2x"></i>
+                    <div>
+                        <h1 data-i18n="app_title">Rezervări Spălătorie</h1>
+                        <p data-i18n="online_reservations">Rezervări Online</p>
+                        <span class="credit-tag" data-i18n="made_by">Made by Robert &amp; Emi</span>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <div class="lang-switch" role="group" aria-label="Limba / Language">
+                        <button type="button" class="lang-opt" data-lang="ro" aria-pressed="true">RO</button>
+                        <button type="button" class="lang-opt" data-lang="en" aria-pressed="false">EN</button>
+                    </div>
+                    <button id="themeToggleBtn" type="button" class="btn-icon-only" title="Mod întunecat" aria-label="Mod întunecat"><i class="fa-solid fa-moon"></i></button>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-layout">
+            <aside class="sidebar">
+                <div class="card info-card">
+                    <div class="info-row">
+                        <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                        <span><span data-i18n="opening_hours">Program spălătorie:</span> <strong id="openingHours"></strong></span>
+                    </div>
+                    <div class="info-row">
+                        <i class="fa-solid fa-key" aria-hidden="true"></i>
+                        <span data-i18n="key_info">Cheia se ia de la pază.</span>
+                    </div>
+                    <div class="info-row">
+                        <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
+                        <span id="slotRule"></span>
+                    </div>
+                    <div class="info-row">
+                        <i class="fa-regular fa-hand-pointer" aria-hidden="true"></i>
+                        <span data-i18n="how_to_book">Apasă pe o oră liberă din orar ca să rezervi.</span>
+                    </div>
+                    <p class="responsible-note"><span data-i18n="responsible">Responsabili:</span> <strong id="responsibleNames"></strong></p>
+                </div>
+
+                <div class="card status-card">
+                    <div class="card-header"><h2><i class="fa-solid fa-signal" aria-hidden="true"></i> <span data-i18n="machines_now">Mașinile acum</span></h2></div>
+                    <ul class="status-list">
+                        <li class="status-row"><svg class="machine-icon" aria-hidden="true"><use href="#icon-washer"/></svg><span class="status-name" data-i18n="machine1">Mașina 1</span><div id="status-masina1" class="live-status" aria-live="polite"></div></li>
+                        <li class="status-row"><svg class="machine-icon" aria-hidden="true"><use href="#icon-washer"/></svg><span class="status-name" data-i18n="machine2">Mașina 2</span><div id="status-masina2" class="live-status" aria-live="polite"></div></li>
+                    </ul>
+                </div>
+            </aside>
+
+            <main class="card schedule-container">
+                <div class="schedule-header">
+                    <h2><i class="fa-regular fa-calendar" aria-hidden="true"></i> <span data-i18n="schedule_24h">Orar</span></h2>
+                    <div class="date-navigator">
+                        <button id="prevDay" class="nav-btn" type="button" data-i18n-aria="prev_day" aria-label="Ziua anterioară"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+                        <span id="currentDateDisplay" aria-live="polite"></span>
+                        <button id="nextDay" class="nav-btn" type="button" data-i18n-aria="next_day" aria-label="Ziua următoare"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+                    </div>
+                </div>
+                <div id="weekStrip" class="week-strip" role="group" data-i18n-aria="week_days" aria-label="Zilele săptămânii"></div>
+                <div id="scheduleLockNotice" class="lock-notice" role="status" hidden></div>
+                <div id="scheduleGrid" class="schedule-grid"></div>
+            </main>
+        </div>
+
+        <footer class="app-footer">
+            <span data-i18n="made_by">Made by Robert &amp; Emi</span>
+            <span class="footer-sep" aria-hidden="true">·</span>
+            <button id="adminToggleBtn" type="button" class="footer-link"><i class="fa-solid fa-lock"></i> <span data-i18n="admin">Admin</span></button>
+        </footer>
+    </div>
+
+    <section id="adminView" class="admin-view" hidden aria-labelledby="adminViewTitle">
+        <header class="av-topbar">
+            <div class="av-title">
+                <i class="fa-solid fa-user-shield" aria-hidden="true"></i>
+                <div>
+                    <h2 id="adminViewTitle" tabindex="-1" data-i18n="admin_panel">Panou admin</h2>
+                    <span id="avUser" class="av-sub"></span>
+                </div>
+            </div>
+            <div class="av-week" role="group" data-i18n-aria="av_week_nav" aria-label="Alege săptămâna">
+                <button id="avPrevWeek" type="button" class="nav-btn" data-i18n-aria="av_prev_week" aria-label="Săptămâna anterioară"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
+                <div class="av-week-label" aria-live="polite"><strong id="avWeekLabel"></strong><span id="avWeekTag"></span></div>
+                <button id="avNextWeek" type="button" class="nav-btn" data-i18n-aria="av_next_week" aria-label="Săptămâna următoare"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+                <button id="avThisWeek" type="button" class="btn-ghost av-today" data-i18n="av_this_week">Săptămâna curentă</button>
+            </div>
+            <div class="av-actions">
+                <button id="avExportXlsx" type="button" class="btn-ghost"><i class="fa-solid fa-file-excel" aria-hidden="true"></i> <span>Excel</span></button>
+                <button id="avExportPdf" type="button" class="btn-ghost"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i> <span>PDF</span></button>
+                <button id="avClose" type="button" class="btn-icon-only" data-i18n-aria="av_back" aria-label="Înapoi la site"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </div>
+        </header>
+
+        <div id="avContent" class="av-body">
+            <div class="av-kpis" id="avKpis"></div>
+
+            <div class="av-layout">
+                <div class="card av-main">
+                    <div class="av-tabs" role="tablist">
+                        <button type="button" role="tab" id="avTabGrid" class="av-tab" aria-selected="true" aria-controls="avGridPanel" data-i18n="av_tab_grid">Orar săptămână</button>
+                        <button type="button" role="tab" id="avTabList" class="av-tab" aria-selected="false" aria-controls="avListPanel" data-i18n="av_tab_list">Listă rezervări</button>
+                        <div class="av-search">
+                            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                            <input type="search" id="adminSearchInput" data-i18n-placeholder="av_search" placeholder="Caută nume sau cameră" data-i18n-aria="av_search" aria-label="Caută nume sau cameră">
+                        </div>
+                    </div>
+                    <div id="avGridPanel" role="tabpanel" aria-labelledby="avTabGrid" class="av-panel"></div>
+                    <div id="avListPanel" role="tabpanel" aria-labelledby="avTabList" class="av-panel" hidden></div>
+                </div>
+
+                <aside class="av-side">
+                    <div class="card av-card">
+                        <h3 class="av-card-title" data-i18n="av_control">Control</h3>
+                        <div class="av-control-row">
+                            <div>
+                                <span class="av-control-name" data-i18n="maintenance">Mentenanță</span>
+                                <span id="maintenanceStatusLabel" class="av-control-state" data-i18n="system_online">Sistem online</span>
+                            </div>
+                            <label class="switch"><input type="checkbox" id="maintenanceToggle" data-i18n-aria="maintenance" aria-label="Mentenanță"><span class="slider round"></span></label>
+                        </div>
+                        <div id="brokenMachinesSection"></div>
+                    </div>
+                    <div class="card av-card">
+                        <h3 class="av-card-title" data-i18n="av_by_day">Ocupare pe zile</h3>
+                        <div id="avDayLoad"></div>
+                    </div>
+                    <div class="card av-card">
+                        <h3 class="av-card-title"><span data-i18n="av_by_person">Intervale pe persoană</span></h3>
+                        <div id="avPeople"></div>
+                    </div>
+                    <button id="adminLogoutBtn" type="button" class="btn-ghost av-logout"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i> <span data-i18n="logout">Deconectare</span></button>
+                </aside>
+            </div>
+        </div>
+    </section>
+
+    <div id="modalOverlay" class="modal-overlay">
+        <div id="reserveModal" class="modal-box reserve-modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="reserveTitle">
+            <button type="button" class="modal-close" data-i18n-aria="close" aria-label="Închide">&times;</button>
+            <h3 id="reserveTitle"><i class="fa-solid fa-calendar-plus" aria-hidden="true"></i> <span data-i18n="new_reservation">Rezervare nouă</span></h3>
+            <p id="reserveSummary" class="reserve-summary"></p>
+            <form id="bookingForm" novalidate>
+                <fieldset class="form-group">
+                    <legend data-i18n="equipment">Mașina</legend>
+                    <div class="segmented" id="machineChoice">
+                        <label><input type="radio" name="machineChoice" value="masina1"><span data-i18n="machine1">Mașina 1</span></label>
+                        <label><input type="radio" name="machineChoice" value="masina2"><span data-i18n="machine2">Mașina 2</span></label>
+                        <label><input type="radio" name="machineChoice" value="both"><span data-i18n="both_machines">Ambele</span></label>
+                    </div>
+                    <p id="machineHint" class="field-hint" hidden></p>
+                </fieldset>
+
+                <fieldset class="form-group">
+                    <legend data-i18n="slots">Sloturi</legend>
+                    <div class="segmented slot-choice" id="slotChoice"></div>
+                    <p id="endTimeHint" class="field-hint" aria-live="polite"></p>
+                </fieldset>
+
+                <div class="form-row name-room-row">
+                    <div class="form-group">
+                        <label for="userName" data-i18n="name">Nume</label>
+                        <input type="text" id="userName" autocomplete="name" autocapitalize="words" data-i18n-placeholder="name_placeholder" placeholder="Ex: Maria Popescu" aria-describedby="err-userName">
+                        <p class="field-error" id="err-userName" hidden></p>
+                    </div>
+                    <div class="form-group">
+                        <label for="userRoom" data-i18n="room">Cameră</label>
+                        <input type="text" id="userRoom" inputmode="numeric" maxlength="4" placeholder="304" aria-describedby="err-userRoom">
+                        <p class="field-error" id="err-userRoom" hidden></p>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="userPin" data-i18n="secret_pin">PIN (4 cifre)</label>
+                    <input type="password" id="userPin" inputmode="numeric" maxlength="4" autocomplete="off" data-i18n-placeholder="pin_placeholder" placeholder="Ex: 1234" aria-describedby="pinHelp err-userPin">
+                    <p id="pinHelp" class="field-hint" data-i18n="pin_helper">Îl folosești ca să-ți ștergi rezervarea.</p>
+                    <p class="field-error" id="err-userPin" hidden></p>
+                </div>
+
+                <div id="reserveError" class="form-error" role="alert" hidden></div>
+
+                <button type="submit" class="btn-primary"><i class="fa-solid fa-check" aria-hidden="true"></i> <span data-i18n="book_now">Rezervă</span></button>
+                <p class="privacy-line"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> <span data-i18n="privacy_desc1">Se salvează doar numele, camera și intervalul rezervării.</span></p>
+            </form>
+        </div>
+
+        <div id="bookingModal" class="modal-box" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="bookingModalTitle">
+            <button type="button" class="modal-close" data-i18n-aria="close" aria-label="Închide">&times;</button>
+            <h3 id="bookingModalTitle"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i> <span data-i18n="booking_details">Rezervare</span></h3>
+            <div class="modal-body">
+                <h4 id="modalUserName"></h4>
+                <p id="modalBookingInfo"></p>
+                <button id="requestDeleteBtn" class="btn-action delete" style="width:100%;margin-top:8px;"><i class="fa-solid fa-trash"></i> <span data-i18n="delete">Șterge</span></button>
+            </div>
+        </div>
+
+        <div id="confirmModal" class="modal-box" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+            <button type="button" class="modal-close" data-i18n-aria="close" aria-label="Închide">&times;</button>
+            <h3 id="confirmModalTitle"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> <span data-i18n="confirmation">Confirmare</span></h3>
+            <p data-i18n="confirm_delete_msg">Ești sigur că vrei să ștergi această rezervare?</p>
+            <div class="modal-actions">
+                <button id="cancelDeleteBtn" class="btn-action secondary" data-i18n="no_cancel">Nu, renunț</button>
+                <button id="confirmDeleteBtn" class="btn-action delete" data-i18n="yes_delete">Da, șterge</button>
+            </div>
+        </div>
+
+        <div id="deletePinModal" class="modal-box" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="deletePinTitle">
+            <button type="button" class="modal-close" data-i18n-aria="close" aria-label="Închide">&times;</button>
+            <h3 id="deletePinTitle"><i class="fa-solid fa-lock" aria-hidden="true"></i> <span data-i18n="delete_title">Ștergere</span></h3>
+            <p id="deletePinMsg" data-i18n="delete_pin_msg">Introdu codul PIN (4 cifre) setat la rezervare:</p>
+            <input type="password" id="deletePinInput" class="full-width-input" inputmode="numeric" maxlength="4" autocomplete="off" aria-labelledby="deletePinMsg">
+            <div class="modal-actions">
+                <button id="cancelPinDeleteBtn" class="btn-action secondary" data-i18n="cancel">Anulează</button>
+                <button id="confirmPinDeleteBtn" class="btn-action delete" data-i18n="delete">Șterge</button>
+            </div>
+        </div>
+
+        <div id="successModal" class="modal-box success-modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="successTitle">
+            <button type="button" class="modal-close" data-i18n-aria="close" aria-label="Închide">&times;</button>
+            <i class="fa-solid fa-circle-check success-modal-icon"></i>
+            <h3 id="successTitle" data-i18n="booking_confirmed">Rezervare confirmată</h3>
+            <div class="success-details">
+                <div class="success-row"><svg class="success-label machine-icon" aria-hidden="true"><use href="#icon-washer"/></svg><span id="successMachine" class="success-value"></span></div>
+                <div class="success-row"><i class="fa-regular fa-calendar success-label"></i><span id="successDate" class="success-value"></span></div>
+                <div class="success-row"><i class="fa-regular fa-clock success-label"></i><span id="successTime" class="success-value"></span></div>
+                <div class="success-row"><i class="fa-solid fa-layer-group success-label"></i><span id="successDuration" class="success-value"></span></div>
+                <div class="success-row"><i class="fa-solid fa-user success-label"></i><span id="successName" class="success-value"></span></div>
+            </div>
+            <button id="successModalCloseBtn" class="btn-primary" style="margin-top:16px;" data-i18n="ok_close">OK, Închide</button>
+        </div>
+
+        <div id="adminModal" class="modal-box" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="adminTitle">
+            <button type="button" class="modal-close" data-i18n-aria="close" aria-label="Închide">&times;</button>
+            <form id="adminLoginForm" novalidate>
+                <h3 id="adminTitle"><i class="fa-solid fa-user-shield" aria-hidden="true"></i> <span data-i18n="admin_login_title">Autentificare admin</span></h3>
+                <div class="form-group">
+                    <label for="adminEmail" data-i18n="admin_email">Email</label>
+                    <input type="email" id="adminEmail" autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="adminPassword" data-i18n="admin_password">Parolă</label>
+                    <input type="password" id="adminPassword" autocomplete="current-password">
+                </div>
+                <div id="adminLoginError" class="form-error" role="alert" hidden></div>
+                <button id="adminLoginBtn" type="submit" class="btn-primary"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> <span data-i18n="login">Conectare</span></button>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
