@@ -13,6 +13,7 @@ create or replace function public.cfg_unlock_time() returns time language sql im
 create or replace function public.cfg_retention_days() returns int language sql immutable as $$ select 182 $$;
 create or replace function public.cfg_pin_max_attempts() returns int language sql immutable as $$ select 5 $$;
 create or replace function public.cfg_pin_lock() returns interval language sql immutable as $$ select interval '15 minutes' $$;
+create or replace function public.cfg_pin_max_total() returns int language sql immutable as $$ select 20 $$;
 
 create or replace function public.local_now() returns timestamp
 language sql stable as $$ select now() at time zone public.cfg_timezone() $$;
@@ -237,8 +238,13 @@ begin
   if coalesce(p_pin, '') !~ '^\d{4}$' or extensions.crypt(p_pin, v_sec.pin_hash) <> v_sec.pin_hash then
     v_fails := v_sec.failed_attempts + 1;
     update public.booking_secrets
-    set failed_attempts = case when v_fails >= public.cfg_pin_max_attempts() then 0 else v_fails end,
-        locked_until = case when v_fails >= public.cfg_pin_max_attempts() then now() + public.cfg_pin_lock() else locked_until end
+    set failed_attempts = v_fails,
+        locked_until = case
+          when v_fails >= public.cfg_pin_max_total() then 'infinity'
+          when v_fails % public.cfg_pin_max_attempts() = 0
+            then now() + public.cfg_pin_lock() * power(2, v_fails / public.cfg_pin_max_attempts() - 1)
+          else locked_until
+        end
     where group_id = v_group;
     return 'wrong_pin';
   end if;
