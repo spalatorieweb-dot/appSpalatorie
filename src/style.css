@@ -931,8 +931,8 @@ body.dark-mode .week-day.selected { background: var(--accent-solid); border-colo
 .status-row:last-child { border-bottom: 0; }
 .status-name { font-size: .9rem; font-weight: 600; color: var(--text); }
 .status-row .live-status { margin: 0; justify-self: end; text-align: right; }
-.status-row .live-status.busy { width: 150px; background: none; padding: 0; color: var(--text-2); }
-.status-row .live-status.busy .busy-text { font-weight: 600; font-size: .78rem; }
+.status-row .live-status.busy { width: auto; min-width: 150px; background: none; padding: 0; color: var(--text-2); }
+.status-row .live-status.busy .busy-text { font-weight: 600; font-size: .78rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .status-row .live-status.busy .status-progress-track { background: var(--border-soft); }
 .status-row .live-status.busy .status-progress-fill { background: var(--accent); }
 
