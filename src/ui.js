@@ -401,7 +401,6 @@ export const ui = {
         overlay.classList.remove('closing');
         if (overlay.style.display !== 'flex') this._returnFocus = document.activeElement;
         overlay.querySelectorAll(':scope > .modal-box').forEach(b => { b.style.display = 'none'; });
-        this.lockScroll();
         overlay.style.display = 'flex';
         this._fitViewport?.();
         const box = document.getElementById(id);
@@ -429,7 +428,6 @@ export const ui = {
         overlay.style.display = 'none';
         Object.assign(overlay.style, { top: '', height: '', bottom: '' });
         overlay.querySelectorAll(':scope > .modal-box').forEach(b => { b.style.display = 'none'; });
-        this.unlockScroll();
         document.querySelectorAll('.selected-slot').forEach(el => el.classList.remove('selected-slot'));
         const back = this._returnFocus;
         this._returnFocus = null;
@@ -454,6 +452,19 @@ export const ui = {
         vv?.addEventListener('resize', this._fitViewport);
         vv?.addEventListener('scroll', this._fitViewport);
         overlay.addEventListener('focusout', () => setTimeout(this._fitViewport, 100));
+        const canScroll = (target, dy) => {
+            const box = target.closest?.('.modal-box');
+            if (!box || box.scrollHeight <= box.clientHeight) return false;
+            return dy < 0 ? box.scrollTop > 0 : box.scrollTop + box.clientHeight < box.scrollHeight - 1;
+        };
+        let touchY = 0;
+        overlay.addEventListener('wheel', (e) => { if (!canScroll(e.target, e.deltaY)) e.preventDefault(); }, { passive: false });
+        overlay.addEventListener('touchstart', (e) => { touchY = e.touches[0].clientY; }, { passive: true });
+        overlay.addEventListener('touchmove', (e) => {
+            const y = e.touches[0].clientY;
+            if (!canScroll(e.target, touchY - y)) e.preventDefault();
+            touchY = y;
+        }, { passive: false });
         overlay.addEventListener('focusin', (e) => {
             if (!typing()) return;
             this._fitViewport();
@@ -464,22 +475,6 @@ export const ui = {
                 box.scrollTo({ top: Math.max(0, top - box.clientHeight / 3), behavior: 'smooth' });
             }, 320);
         });
-    },
-
-    lockScroll() {
-        if (this._scrollLock) return;
-        const y = window.scrollY;
-        const gap = window.innerWidth - document.documentElement.clientWidth;
-        this._scrollLock = { y };
-        Object.assign(document.body.style, { position: 'fixed', top: `-${y}px`, left: '0', right: '0', paddingRight: gap ? `${gap}px` : '' });
-    },
-
-    unlockScroll() {
-        if (!this._scrollLock) return;
-        const { y } = this._scrollLock;
-        this._scrollLock = null;
-        Object.assign(document.body.style, { position: '', top: '', left: '', right: '', paddingRight: '' });
-        window.scrollTo({ top: y, behavior: 'instant' });
     },
 
     trapFocus(e) {
