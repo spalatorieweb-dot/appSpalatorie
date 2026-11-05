@@ -420,7 +420,7 @@ export const ui = {
         if (overlay.style.display !== 'flex' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { this.finishClose(); return; }
         clearTimeout(this._closeTimer);
         overlay.classList.add('closing');
-        this._closeTimer = setTimeout(() => this.finishClose(), window.innerWidth <= 600 ? 210 : 150);
+        this._closeTimer = setTimeout(() => this.finishClose(), window.innerWidth <= 600 ? 250 : 210);
     },
 
     finishClose() {
@@ -439,17 +439,30 @@ export const ui = {
     setupViewport() {
         const overlay = document.getElementById('modalOverlay');
         const vv = window.visualViewport;
-        if (vv) {
-            this._fitViewport = () => {
+        const typing = () => overlay.contains(document.activeElement) && document.activeElement.matches('input:not([type=radio])');
+        let frame = 0;
+        this._fitViewport = () => {
+            cancelAnimationFrame(frame);
+            frame = requestAnimationFrame(() => {
                 if (overlay.style.display !== 'flex') return;
-                Object.assign(overlay.style, { top: `${vv.offsetTop}px`, height: `${vv.height}px`, bottom: 'auto' });
-            };
-            vv.addEventListener('resize', this._fitViewport);
-            vv.addEventListener('scroll', this._fitViewport);
-        }
+                const keyboard = vv && window.innerHeight - vv.height > 80 && typing();
+                Object.assign(overlay.style, keyboard
+                    ? { top: `${vv.offsetTop}px`, height: `${vv.height}px`, bottom: 'auto' }
+                    : { top: '', height: '', bottom: '' });
+            });
+        };
+        vv?.addEventListener('resize', this._fitViewport);
+        vv?.addEventListener('scroll', this._fitViewport);
+        overlay.addEventListener('focusout', () => setTimeout(this._fitViewport, 100));
         overlay.addEventListener('focusin', (e) => {
-            if (!e.target.matches('input:not([type=radio])')) return;
-            setTimeout(() => e.target.scrollIntoView({ block: 'center', behavior: 'smooth' }), 300);
+            if (!typing()) return;
+            this._fitViewport();
+            setTimeout(() => {
+                const box = e.target.closest('.modal-box');
+                if (!box || box.scrollHeight <= box.clientHeight) return;
+                const top = e.target.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop;
+                box.scrollTo({ top: Math.max(0, top - box.clientHeight / 3), behavior: 'smooth' });
+            }, 320);
         });
     },
 
@@ -484,6 +497,15 @@ export const ui = {
 
     // Booking form
 
+    machineReason(m, date, startMins) {
+        const name = i18n.t(utils.getMachineKey(m));
+        if (brokenMachines[m]) return this.fmt('machine_broken_short', { m: name });
+        const b = localBookings.find(x => x.machineType === m && x.date === date
+            && utils.timeToMins(x.startTime) < startMins + 30 && utils.timeToMins(x.startTime) + parseInt(x.duration) > startMins);
+        const until = b ? utils.minsToTime(utils.timeToMins(b.startTime) + parseInt(b.duration)) : '';
+        return this.fmt('machine_busy_until', { m: name, t: until });
+    },
+
     openReserve(machine, slot) {
         this._draft = { date: this.currentDate, start: slot };
         const startMins = utils.timeToMins(slot);
@@ -497,9 +519,9 @@ export const ui = {
             r.checked = r.value === machine;
         });
         const hint = document.getElementById('machineHint');
-        const bothDisabled = document.querySelector('input[name="machineChoice"][value="both"]').disabled;
-        hint.hidden = !bothDisabled;
-        if (bothDisabled) hint.textContent = i18n.t('both_unavailable');
+        const blocked = keys.filter(m => !machineOk(m));
+        hint.hidden = !blocked.length;
+        hint.textContent = blocked.map(m => this.machineReason(m, this._draft.date, startMins)).join(' ');
 
         const nameEl = document.getElementById('userName'), roomEl = document.getElementById('userRoom');
         nameEl.value = localStorage.getItem('userName') || '';
