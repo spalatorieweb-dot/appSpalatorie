@@ -584,6 +584,7 @@ body.dark-mode .live-status.busy .status-progress-track { background: rgba(255,2
     z-index: 3000;
     display: none; justify-content: center; align-items: center;
     padding: 20px; backdrop-filter: blur(4px);
+    overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y;
 }
 .modal-box {
     background: var(--surface); border: 1px solid var(--border);

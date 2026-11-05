@@ -387,6 +387,7 @@ export const ui = {
         const overlay = document.getElementById('modalOverlay');
         if (overlay.style.display !== 'flex') this._returnFocus = document.activeElement;
         overlay.querySelectorAll(':scope > .modal-box').forEach(b => { b.style.display = 'none'; });
+        this.lockScroll();
         overlay.style.display = 'flex';
         const box = document.getElementById(id);
         box.style.display = 'block';
@@ -403,10 +404,27 @@ export const ui = {
         const overlay = document.getElementById('modalOverlay');
         overlay.style.display = 'none';
         overlay.querySelectorAll(':scope > .modal-box').forEach(b => { b.style.display = 'none'; });
+        this.unlockScroll();
         document.querySelectorAll('.selected-slot').forEach(el => el.classList.remove('selected-slot'));
         const back = this._returnFocus;
         this._returnFocus = null;
         if (back && document.contains(back)) back.focus({ preventScroll: true });
+    },
+
+    lockScroll() {
+        if (this._scrollLock) return;
+        const y = window.scrollY;
+        const gap = window.innerWidth - document.documentElement.clientWidth;
+        this._scrollLock = { y };
+        Object.assign(document.body.style, { position: 'fixed', top: `-${y}px`, left: '0', right: '0', paddingRight: gap ? `${gap}px` : '' });
+    },
+
+    unlockScroll() {
+        if (!this._scrollLock) return;
+        const { y } = this._scrollLock;
+        this._scrollLock = null;
+        Object.assign(document.body.style, { position: '', top: '', left: '', right: '', paddingRight: '' });
+        window.scrollTo({ top: y, behavior: 'instant' });
     },
 
     trapFocus(e) {
