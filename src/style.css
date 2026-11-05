@@ -104,17 +104,29 @@ body {
 
 /* Maintenance */
 .maintenance-screen {
-    position: fixed; inset: 0;
-    background: var(--bg);
-    z-index: 2000;
+    position: fixed; inset: 0; z-index: 2000;
     display: flex; justify-content: center; align-items: center;
-    text-align: center;
+    padding: max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+    background: var(--bg); text-align: center;
+    overflow-y: auto; overscroll-behavior: contain;
+    animation: fadeIn var(--dur) var(--ease-out);
 }
-.maintenance-content { padding: 40px 30px; max-width: 460px; }
-.maintenance-content i { color: var(--warn); margin-bottom: 24px; }
-.maintenance-content h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 10px; }
-.maintenance-content p { color: var(--text-2); font-size: 1rem; }
-.maintenance-sub { font-size: 0.875rem !important; margin-top: 8px; }
+.maintenance-on, .maintenance-on body { overflow: hidden; }
+.maintenance-content {
+    width: 100%; max-width: 400px; margin: auto; padding: 36px 28px 28px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-xl); box-shadow: var(--shadow);
+    animation: modalRise var(--dur-slow) var(--ease-spring);
+}
+.maintenance-icon {
+    width: 72px; height: 72px; margin: 0 auto 20px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--warn-light); color: var(--warn); font-size: 1.8rem;
+}
+.maintenance-content h1 { font-size: clamp(1.3rem, 5vw, 1.6rem); font-weight: 700; line-height: 1.25; margin-bottom: 10px; text-wrap: balance; }
+.maintenance-content p { color: var(--text-2); font-size: 1rem; line-height: 1.5; text-wrap: pretty; }
+.maintenance-content .maintenance-sub { font-size: .875rem; margin-top: 6px; }
+.maintenance-admin { width: 100%; justify-content: center; margin-top: 24px; min-height: 46px; }
 
 /* Buttons */
 .btn-ghost {
@@ -591,9 +603,7 @@ body.dark-mode .live-status.busy .status-progress-track { background: rgba(255,2
     border-radius: var(--radius-xl); padding: 28px;
     width: 100%; max-width: 420px;
     box-shadow: var(--shadow-lg); position: relative;
-    animation: modalIn 0.2s cubic-bezier(.34,1.56,.64,1);
 }
-@keyframes modalIn { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .modal-close {
     position: absolute; top: 16px; right: 16px;
     background: var(--bg2); border: 1px solid var(--border); color: var(--text-2);
@@ -831,6 +841,7 @@ body.admin-mode #confirmModal p { color: #9E9288; }
     --dur-fast: 150ms;
     --dur: 220ms;
     --dur-slow: 320ms;
+    --ease-spring: cubic-bezier(.32, .72, 0, 1);
 }
 
 @keyframes fadeUp      { from { opacity: 0; transform: translateY(8px); }  to { opacity: 1; transform: none; } }
@@ -853,7 +864,18 @@ body.admin-mode #confirmModal p { color: #9E9288; }
 .fade-in          { animation: fadeIn var(--dur) var(--ease-out); }
 
 .modal-overlay { animation: fadeIn var(--dur) var(--ease-out); }
-.modal-box     { animation: fadeUp var(--dur) var(--ease-out); }
+.modal-box { animation: modalRise var(--dur-slow) var(--ease-spring); }
+.modal-overlay.closing { animation: fadeOut var(--dur-fast) var(--ease-out) forwards; }
+.modal-overlay.closing .modal-box { animation: modalFall var(--dur-fast) var(--ease-out) forwards; }
+@keyframes modalRise { from { opacity: 0; transform: translateY(12px) scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes modalFall { to { opacity: 0; transform: translateY(8px) scale(.985); } }
+@keyframes fadeOut { to { opacity: 0; } }
+@keyframes sheetUp { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes sheetDown { to { transform: translateY(100%); } }
+@media (max-width: 600px) {
+    .modal-box { animation: sheetUp var(--dur-slow) var(--ease-spring); }
+    .modal-overlay.closing .modal-box { animation: sheetDown var(--dur) var(--ease-out) forwards; }
+}
 
 .btn-primary, .btn-action, .btn-ghost, .btn-icon-only, .nav-btn, .tab-btn, .selector-card, .btn-delete-vip {
     transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out),
@@ -873,7 +895,6 @@ input, select, .tip-item, .privacy-note {
 
 
 html { scroll-behavior: smooth; }
-:root { --ease-spring: cubic-bezier(.32, .72, 0, 1); }
 
 .machine-icon { width: 20px; height: 20px; display: inline-block; vertical-align: middle; color: var(--accent); flex-shrink: 0; }
 
@@ -979,8 +1000,6 @@ input[aria-invalid="true"] { border-color: var(--danger) !important; }
 .privacy-line { font-size: .78rem; color: var(--text-2); text-align: center; margin-top: 12px; line-height: 1.4; }
 .privacy-line i { margin-right: 4px; }
 
-.modal-box { animation: modalRise var(--dur-slow) var(--ease-spring); }
-@keyframes modalRise { from { opacity: 0; transform: translateY(12px) scale(.985); } to { opacity: 1; transform: none; } }
 .success-modal-icon { animation: fadeUp var(--dur-slow) var(--ease-out) 80ms both; }
 
 
@@ -988,8 +1007,6 @@ input[aria-invalid="true"] { border-color: var(--danger) !important; }
     .week-strip { padding: 8px 8px 10px; gap: 2px; }
     .week-day { min-height: 56px; }
     .status-list { padding: 4px 14px 8px; }
-    .modal-box { animation: sheetUp var(--dur-slow) var(--ease-spring); }
-    #adminModal { animation: fadeIn var(--dur) var(--ease-out); }
     .reserve-summary { font-size: 1.05rem; }
 }
 
@@ -1213,18 +1230,15 @@ button, a, input, select, .selector-card, .time-slot { touch-action: manipulatio
 
     .modal-overlay { align-items: flex-end; padding: 0; backdrop-filter: none; }
     .modal-box {
-        max-width: 100%; max-height: 90dvh; overflow-y: auto;
+        max-width: 100%; max-height: min(90dvh, 100%); overflow-y: auto; overscroll-behavior: contain;
         border-radius: var(--radius-xl) var(--radius-xl) 0 0;
         padding: 22px 16px calc(18px + env(safe-area-inset-bottom));
-        animation: sheetUp var(--dur-slow) var(--ease-out);
     }
-    #adminModal { animation: sheetUp var(--dur-slow) var(--ease-out); }
     .modal-close { width: 40px; height: 40px; }
     .btn-action { min-height: 46px; }
 
     .toast { bottom: calc(16px + env(safe-area-inset-bottom)); white-space: normal; width: max-content; max-width: calc(100vw - 24px); }
 }
-@keyframes sheetUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
 
 @media (hover: none) {
     .time-slot.available:hover { background: var(--surface); color: var(--text); }

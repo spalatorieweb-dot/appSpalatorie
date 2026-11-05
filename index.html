@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-VOxJmwu8nZRRi5PJcmjEZ7xgZTNk3DiCNA+MntkFqTI=' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self' https://bmksljcfsfnxtmgghcmz.supabase.co wss://bmksljcfsfnxtmgghcmz.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
     <meta name="referrer" content="strict-origin-when-cross-origin">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233E625C' stroke-width='1.7'%3E%3Crect x='4' y='2.5' width='16' height='19' rx='2.5'/%3E%3Cpath d='M4 7h16'/%3E%3Ccircle cx='12' cy='14' r='4.5'/%3E%3C/svg%3E">
     <meta name="theme-color" content="#F7F4EF">
     <title>Rezervări Spălătorie</title>
@@ -28,13 +28,13 @@
         <button id="reloadBtn" class="btn-ghost" style="display:none;" data-i18n="retry">Reîncearcă</button>
     </div>
 
-    <div id="maintenanceOverlay" class="maintenance-screen" style="display:none;">
+    <div id="maintenanceOverlay" class="maintenance-screen" style="display:none;" role="alertdialog" aria-modal="true" aria-labelledby="maintenanceTitle">
         <div class="maintenance-content">
-            <i class="fa-solid fa-screwdriver-wrench fa-3x"></i>
-            <h1 data-i18n="maintenance_title">Mentenanță în Curs</h1>
+            <div class="maintenance-icon" aria-hidden="true"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+            <h1 id="maintenanceTitle" data-i18n="maintenance_title">Mentenanță în Curs</h1>
             <p data-i18n="maintenance_desc1">Revenim imediat! Facem curățenie în sistem.</p>
             <p class="maintenance-sub" data-i18n="maintenance_desc2">Ne vedem în câteva minute.</p>
-            <button id="maintenanceAdminBtn" class="btn-ghost" style="margin-top:24px;"><i class="fa-solid fa-lock"></i> <span data-i18n="im_admin">Sunt Administrator</span></button>
+            <button id="maintenanceAdminBtn" class="btn-ghost maintenance-admin"><i class="fa-solid fa-lock" aria-hidden="true"></i> <span data-i18n="im_admin">Sunt Administrator</span></button>
         </div>
     </div>
 
@@ -202,19 +202,19 @@
                 <div class="form-row name-room-row">
                     <div class="form-group">
                         <label for="userName" data-i18n="name">Nume</label>
-                        <input type="text" id="userName" autocomplete="name" autocapitalize="words" data-i18n-placeholder="name_placeholder" placeholder="Ex: Maria Popescu" aria-describedby="err-userName">
+                        <input type="text" id="userName" enterkeyhint="next" autocomplete="name" autocapitalize="words" data-i18n-placeholder="name_placeholder" placeholder="Ex: Maria Popescu" aria-describedby="err-userName">
                         <p class="field-error" id="err-userName" hidden></p>
                     </div>
                     <div class="form-group">
                         <label for="userRoom" data-i18n="room">Cameră</label>
-                        <input type="text" id="userRoom" inputmode="numeric" maxlength="4" placeholder="304" aria-describedby="err-userRoom">
+                        <input type="text" id="userRoom" enterkeyhint="next" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="304" aria-describedby="err-userRoom">
                         <p class="field-error" id="err-userRoom" hidden></p>
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label for="userPin" data-i18n="secret_pin">PIN (4 cifre)</label>
-                    <input type="password" id="userPin" inputmode="numeric" maxlength="4" autocomplete="off" data-i18n-placeholder="pin_placeholder" placeholder="Ex: 1234" aria-describedby="pinHelp err-userPin">
+                    <input type="password" id="userPin" enterkeyhint="done" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" data-i18n-placeholder="pin_placeholder" placeholder="Ex: 1234" aria-describedby="pinHelp err-userPin">
                     <p id="pinHelp" class="field-hint" data-i18n="pin_helper">Îl folosești ca să-ți ștergi rezervarea.</p>
                     <p class="field-error" id="err-userPin" hidden></p>
                 </div>
@@ -250,7 +250,7 @@
             <button type="button" class="modal-close" data-i18n-aria="close" aria-label="Închide">&times;</button>
             <h3 id="deletePinTitle"><i class="fa-solid fa-lock" aria-hidden="true"></i> <span data-i18n="delete_title">Ștergere</span></h3>
             <p id="deletePinMsg" data-i18n="delete_pin_msg">Introdu codul PIN (4 cifre) setat la rezervare:</p>
-            <input type="password" id="deletePinInput" class="full-width-input" inputmode="numeric" maxlength="4" autocomplete="off" aria-labelledby="deletePinMsg">
+            <input type="password" id="deletePinInput" class="full-width-input" enterkeyhint="done" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" aria-labelledby="deletePinMsg">
             <div class="modal-actions">
                 <button id="cancelPinDeleteBtn" class="btn-action secondary" data-i18n="cancel">Anulează</button>
                 <button id="confirmPinDeleteBtn" class="btn-action delete" data-i18n="delete">Șterge</button>
@@ -277,11 +277,11 @@
                 <h3 id="adminTitle"><i class="fa-solid fa-user-shield" aria-hidden="true"></i> <span data-i18n="admin_login_title">Autentificare admin</span></h3>
                 <div class="form-group">
                     <label for="adminEmail" data-i18n="admin_email">Email</label>
-                    <input type="email" id="adminEmail" autocomplete="username">
+                    <input type="email" id="adminEmail" enterkeyhint="next" autocomplete="username" autocapitalize="off" spellcheck="false">
                 </div>
                 <div class="form-group">
                     <label for="adminPassword" data-i18n="admin_password">Parolă</label>
-                    <input type="password" id="adminPassword" autocomplete="current-password">
+                    <input type="password" id="adminPassword" enterkeyhint="go" autocomplete="current-password">
                 </div>
                 <div id="adminLoginError" class="form-error" role="alert" hidden></div>
                 <button id="adminLoginBtn" type="submit" class="btn-primary"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> <span data-i18n="login">Conectare</span></button>

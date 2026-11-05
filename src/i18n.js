@@ -35,6 +35,7 @@ export const i18n = {
 
       "booking_details": "Rezervare",
       "delete": "Șterge",
+      "admin_delete": "Șterge ca admin",
       "confirmation": "Confirmare",
       "confirm_delete_msg": "Ești sigur că vrei să ștergi această rezervare?",
       "no_cancel": "Nu, renunț",
@@ -233,6 +234,7 @@ export const i18n = {
 
       "booking_details": "Booking",
       "delete": "Delete",
+      "admin_delete": "Delete as admin",
       "confirmation": "Confirmation",
       "confirm_delete_msg": "Are you sure you want to delete this reservation?",
       "no_cancel": "No, cancel",

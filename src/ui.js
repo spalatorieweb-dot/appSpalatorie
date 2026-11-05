@@ -90,13 +90,17 @@ export const ui = {
             brokenMachines = state.brokenMachines;
             const toggle = document.getElementById('maintenanceToggle');
             if (toggle) toggle.checked = state.maintenance;
-            const overlay = document.getElementById('maintenanceOverlay');
-            overlay.style.display = state.maintenance && !isAdmin ? 'flex' : 'none';
+            this.showMaintenance(state.maintenance && !isAdmin);
             this.updateBrokenMachineVisuals();
             this.renderSchedule();
             this.updateMachineStatus();
             if (!document.getElementById('adminView').hidden) this.renderBrokenMachineToggles();
         } catch (e) { console.error('Load state failed:', e); }
+    },
+
+    showMaintenance(on) {
+        document.getElementById('maintenanceOverlay').style.display = on ? 'flex' : 'none';
+        document.documentElement.classList.toggle('maintenance-on', on);
     },
 
     // Machines
@@ -180,6 +184,7 @@ export const ui = {
 
     // Events
     setupEventListeners() {
+        this.setupViewport();
         document.getElementById('bookingForm').addEventListener('submit', this.handleBooking.bind(this));
         document.getElementById('scheduleGrid').addEventListener('click', (ev) => this.onScheduleClick(ev));
         document.getElementById('prevDay').onclick = () => this.changeDate(-1);
@@ -220,6 +225,13 @@ export const ui = {
 
         const pinInput = document.getElementById('deletePinInput');
         if (pinInput) pinInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') this.confirmPinDelete(); });
+        [['userName', 'userRoom'], ['userRoom', 'userPin'], ['adminEmail', 'adminPassword']].forEach(([from, to]) => {
+            document.getElementById(from).addEventListener('keydown', (e) => {
+                if (e.key !== 'Enter') return;
+                e.preventDefault();
+                document.getElementById(to).focus();
+            });
+        });
 
         document.getElementById('maintenanceToggle').onchange = async (e) => {
             if (!data.isAdmin) { e.target.checked = !e.target.checked; return; }
@@ -266,14 +278,14 @@ export const ui = {
             this.reloadBookings(); 
             document.body.classList.toggle('admin-mode', !!user);
             if (user) {
-                document.getElementById('maintenanceOverlay').style.display = 'none';
+                this.showMaintenance(false);
 
                 if (this._loginPending) { this._loginPending = false; this.closeModals(); this.openAdminView(); }
             } else {
                 this.closeAdminView();
                 document.getElementById('adminPassword').value = '';
                 const toggle = document.getElementById('maintenanceToggle');
-                if (toggle?.checked) { document.getElementById('maintenanceOverlay').style.display = 'flex'; this.closeModals(); }
+                if (toggle?.checked) { this.showMaintenance(true); this.closeModals(); }
             }
         });
     },
@@ -385,10 +397,13 @@ export const ui = {
 
     openModal(id, focusId) {
         const overlay = document.getElementById('modalOverlay');
+        clearTimeout(this._closeTimer);
+        overlay.classList.remove('closing');
         if (overlay.style.display !== 'flex') this._returnFocus = document.activeElement;
         overlay.querySelectorAll(':scope > .modal-box').forEach(b => { b.style.display = 'none'; });
         this.lockScroll();
         overlay.style.display = 'flex';
+        this._fitViewport?.();
         const box = document.getElementById(id);
         box.style.display = 'block';
         let target = (focusId && document.getElementById(focusId)) ||
@@ -402,13 +417,40 @@ export const ui = {
 
     closeModals() {
         const overlay = document.getElementById('modalOverlay');
+        if (overlay.style.display !== 'flex' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { this.finishClose(); return; }
+        clearTimeout(this._closeTimer);
+        overlay.classList.add('closing');
+        this._closeTimer = setTimeout(() => this.finishClose(), window.innerWidth <= 600 ? 210 : 150);
+    },
+
+    finishClose() {
+        const overlay = document.getElementById('modalOverlay');
+        overlay.classList.remove('closing');
         overlay.style.display = 'none';
+        Object.assign(overlay.style, { top: '', height: '', bottom: '' });
         overlay.querySelectorAll(':scope > .modal-box').forEach(b => { b.style.display = 'none'; });
         this.unlockScroll();
         document.querySelectorAll('.selected-slot').forEach(el => el.classList.remove('selected-slot'));
         const back = this._returnFocus;
         this._returnFocus = null;
         if (back && document.contains(back)) back.focus({ preventScroll: true });
+    },
+
+    setupViewport() {
+        const overlay = document.getElementById('modalOverlay');
+        const vv = window.visualViewport;
+        if (vv) {
+            this._fitViewport = () => {
+                if (overlay.style.display !== 'flex') return;
+                Object.assign(overlay.style, { top: `${vv.offsetTop}px`, height: `${vv.height}px`, bottom: 'auto' });
+            };
+            vv.addEventListener('resize', this._fitViewport);
+            vv.addEventListener('scroll', this._fitViewport);
+        }
+        overlay.addEventListener('focusin', (e) => {
+            if (!e.target.matches('input:not([type=radio])')) return;
+            setTimeout(() => e.target.scrollIntoView({ block: 'center', behavior: 'smooth' }), 300);
+        });
     },
 
     lockScroll() {
@@ -717,11 +759,15 @@ export const ui = {
         const end = utils.minsToTime(utils.timeToMins(booking.startTime) + parseInt(booking.duration));
         document.getElementById('modalBookingInfo').textContent =
             `${i18n.t(utils.getMachineKey(booking.machineType))} • ${utils.formatDateRO(booking.date)} • ${booking.startTime} – ${end} (${this.slotsText(Math.ceil(parseInt(booking.duration) / logic.slotMinutes))})`;
+        const label = document.querySelector('#requestDeleteBtn span');
+        label.dataset.i18n = data.isAdmin ? 'admin_delete' : 'delete';
+        label.textContent = i18n.t(label.dataset.i18n);
         this.openModal('bookingModal', 'requestDeleteBtn');
     },
 
     requestDelete(id) {
         if (id) deleteId = id;
+        if (data.isAdmin) { this.confirmDelete([deleteId]); return; }
         const input = document.getElementById('deletePinInput');
         input.value = ''; input.removeAttribute('aria-invalid');
         this.openModal('deletePinModal', 'deletePinInput');
@@ -733,7 +779,6 @@ export const ui = {
         const booking = this.findBooking(deleteId);
         if (!booking) { utils.showToast(i18n.t("booking_not_found_err"), "error"); this.closeModals(); return; }
 
-        if (data.isAdmin) { await this.performAdminDelete([deleteId]); return; }
         if (!/^\d{4}$/.test(enteredPin)) { utils.showToast(i18n.t("enter_4_pin_err"), "error"); return; }
         const btn = document.getElementById('confirmPinDeleteBtn');
         if (btn) btn.disabled = true;
